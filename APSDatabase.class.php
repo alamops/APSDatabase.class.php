@@ -2,8 +2,6 @@
 
 /**
  * @author Alamo Pereira Saravali <alamo.saravali@gmail.com>
- * @application Furtivo
- * @description This is a WebService component to get data and send to Furtivo app requests
  */
 
 class APSDatabase

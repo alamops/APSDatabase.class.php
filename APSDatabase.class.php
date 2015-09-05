@@ -1,6 +1,12 @@
 <?php
 
-class Database
+/**
+ * @author Alamo Pereira Saravali <alamo.saravali@gmail.com>
+ * @application Furtivo
+ * @description This is a WebService component to get data and send to Furtivo app requests
+ */
+
+class APSDatabase
 {
 
     // Public
@@ -8,6 +14,8 @@ class Database
     public $user = '';
     public $password = '';
     public $database = '';
+
+    public $connect_error;
     
     // Private
     private $connection;
@@ -34,7 +42,10 @@ class Database
         $this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
 
         if ($this->connection->connect_error)
-            die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
+            $this->connect_error = $this->connection->connect_error;
+        //     die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
+        
+        $this->connection->set_charset('utf8');
     }
 
     // To open connection
@@ -244,6 +255,12 @@ class Database
     public function get_last_insert_id()
     {
         return $this->last_id;
+    }
+
+    // Close the connection
+    public function close ()
+    {
+        $this->connection->close();
     }
 
 }

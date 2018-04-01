@@ -2,263 +2,482 @@
 
 /**
  * @author Alamo Pereira Saravali <alamo.saravali@gmail.com>
+ * @source https://github.com/alamops/APSDatabase.class.php
  */
 
 class APSDatabase
 {
 
-    // Public
-    public $host = '';
-    public $user = '';
-    public $password = '';
-    public $database = '';
+	// Public
+	public $host = '';
+	public $user = '';
+	public $password = '';
+	public $database = '';
 
-    public $connect_error;
-    
-    // Private
-    private $connection;
-    private $where_string = "";
-    private $order_string = "";
-    private $last_id = "";
+	public $connect_error;
 
-    function __construct($host = null, $user = null, $password = null, $database = null)
-    {
-        // Verify
-        if($host)
-            $this->host = $host;
+	// Private
+	private $connection;
+	private $where_string = "";
+	private $order_string = "";
+	private $limit = "";
+	private $skip = "";
+	private $last_id = "";
+	// private $join_table = "";
+	// private $join_on = "";
+	private $joins = array();
+	private $from = "";
+	private $last_query = "";
 
-        if($user)
-            $this->user = $user;
+	function __construct($host = null, $user = null, $password = null, $database = null)
+	{
+		// PRODUCTION: 'localhost:3306', 'wwwfasta_hemodia', '@5t1?2Q6.?~0', 'wwwfasta_hemodialise'
+		// SANDBOX: 'localhost', 'root', 'root', 'conectarenal'
 
-        if($password)
-            $this->password = $password;
+		$isSandbox = (strstr($_SERVER['HTTP_HOST'], 'localhost')) ? true : false;
 
-        if($database)
-            $this->database = $database;
+		if (!$host)
+			$host = (!$isSandbox) ? 'localhost:3306' : 'localhost';
 
-        // Make Connection
-        $this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
+		if (!$user)
+			$user = (!$isSandbox) ? 'wwwfasta_hemodia' : 'root';
 
-        if ($this->connection->connect_error)
-            $this->connect_error = $this->connection->connect_error;
-        //     die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
-        
-        $this->connection->set_charset('utf8');
-    }
+		if (!$password)
+			$password = (!$isSandbox) ? '@5t1?2Q6.?~0' : 'root';
 
-    // To open connection
-    public function open()
-    {
-        $this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
+		if (!$database)
+			$database = (!$isSandbox) ? 'wwwfasta_hemodialise' : 'conectarenal';
 
-        if ($this->connection->connect_error)
-            die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
-    }
+		// Verify
+		$this->host = $host;
+		$this->user = $user;
+		$this->password = $password;
+		$this->database = $database;
 
-    // Generate a query with array data
-    private function product_query_data($type, $array)
-    {
-        switch ($type) {
-            case 'insert':
-                    $data_col = "(";
-                    $data_values = "(";
-                    $count = 0;
-                    foreach ($array as $col => $value) {
-                        if($count == 0)
-                        {
-                            $data_col .= $col;
+		// Make Connection
+		$this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
 
-                            if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
-                                $data_values .= "'$value'";
-                            else if(is_null($value))
-                                $data_values .= "''";
-                            else
-                                $data_values .= "$value";
+		if ($this->connection->connect_error)
+			$this->connect_error = $this->connection->connect_error;
+		//     die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
 
-                            $count++;
-                        }
-                        else
-                        {
-                            $data_col .= ", " . $col;
-                            $data_values .= ", ";
+		$this->connection->set_charset('utf8');
+	}
 
-                            if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
-                                $data_values .= "'$value'";
-                            else if(is_null($value))
-                                $data_values .= "''";
-                            else
-                                $data_values .= "$value";
-                        }
-                    }
+	// To open connection
+	public function open()
+	{
+		$this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
 
-                    return $data_col . ") VALUES " . $data_values . ")";
-                break;
+		if ($this->connection->connect_error)
+			die('Connect Error (' . $this->connection->connect_errno . ') ' . $this->connection->connect_error);
 
-            case 'update':
-                    $data_string = "";
+		$this->connection->set_charset('utf8');
+	}
 
-                    foreach ($array as $col => $value) {
-                        if(!$data_string)
-                            $data_string = "SET $col=";
-                        else
-                            $data_string .= ", $col=";
+	// Generate a query with array data
+	private function product_query_data($type, $array)
+	{
+		switch ($type) {
+			case 'insert':
+			$data_col = "(";
+			$data_values = "(";
+			$count = 0;
+			foreach ($array as $col => $value) {
+				if($count == 0)
+				{
+					$data_col .= $col;
 
-                        if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
-                            $data_string .= "'$value'";
-                        else if(is_null($value))
-                            $data_string .= "''";
-                        else
-                            $data_string .= "$value";
-                    }
+					if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
+						$data_values .= "'$value'";
+					else if(is_null($value))
+						$data_values .= "''";
+					else
+						$data_values .= "$value";
 
-                    return $data_string;
-                break;
-        }
-    }
+					$count++;
+				}
+				else
+				{
+					$data_col .= ", " . $col;
+					$data_values .= ", ";
 
-    // Save WHERE
-    public function where($col, $value)
-    {
-        if($this->where_string)
-            $this->where_string .= " AND $col = ";
-        else
-            $this->where_string .= "WHERE $col = ";
+					if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value) && !is_array($value))
+						$data_values .= "'$value'";
+					else if(is_null($value))
+						$data_values .= "''";
+					else if(is_array($value))
+						$data_values .= "''";
+					else
+						$data_values .= "$value";
+				}
+			}
 
-        if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
-            $this->where_string .= "'$value'";
-        else if(is_null($value))
-            $this->where_string .= "''";
-        else
-            $this->where_string .= "$value";
-    }
+			return $data_col . ") VALUES " . $data_values . ")";
+			break;
 
-    // Save OR in WHERE
-    public function where_or($col, $value)
-    {
-        if($this->where_string)
-            $this->where_string .= " OR $col = ";
-        else
-            $this->where_string .= "WHERE $col = ";
+			case 'update':
+			$data_string = "";
 
-        if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
-            $this->where_string .= "'$value'";
-        else if(is_null($value))
-            $this->where_string .= "''";
-        else
-            $this->where_string .= "$value";
-    }
+			foreach ($array as $col => $value) {
+				if(!$data_string)
+					$data_string = "SET $col=";
+				else
+					$data_string .= ", $col=";
 
-    // Save ORDER BY
-    public function order_by($col, $order = 'ASC')
-    {
-        $this->order_string = "ORDER BY $col $order";
-    }
+				if(!is_bool($value) && !is_int($value) && !is_float($value) && !is_double($value) && !is_numeric($value) && !is_null($value))
+					$data_string .= "'$value'";
+				else if(is_null($value))
+					$data_string .= "''";
+				else
+					$data_string .= "$value";
+			}
 
-    // Insert data in table
-    public function insert($table, $array, $save_last_id = true)
-    {
-        if(!$table || !$array)
-            return false;
+			return $data_string;
+			break;
+		}
+	}
 
-        //Open
-        $this->open();
+	// Save WHERE
+	public function where($col, $value)
+	{
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			if (strstr($col, ' ')) {
+				$this->where_string .= " AND $col ";
+			}
+			else {
+				$this->where_string .= " AND $col = ";
+			}
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			if (strstr($col, ' ')) {
+				$this->where_string .= "$col ";
+			}
+			else {
+				$this->where_string .= "$col = ";
+			}
+		}
+		else {
+			if (strstr($col, ' ')) {
+				$this->where_string .= "WHERE $col ";
+			}
+			else {
+				$this->where_string .= "WHERE $col = ";
+			}
+		}
 
-        $data = $this->product_query_data('insert', $array);
+		if(!is_bool($value)
+			&& !is_int($value)
+			&& !is_float($value)
+			&& !is_double($value)
+			&& !is_numeric($value)
+			&& !is_null($value)
+		) {
+			$this->where_string .= "'$value'";
+		}
+		else if(is_null($value)) {
+			$this->where_string .= "''";
+		}
+		else {
+			$this->where_string .= "$value";
+		}
+	}
 
-        $insert = "INSERT INTO $table " . $data;
+	// Save OR in WHERE
+	public function where_or($col, $value)
+	{
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			if (strstr($col, ' ')) {
+				$this->where_string .= " OR $col ";
+			}
+			else {
+				$this->where_string .= " OR $col = ";
+			}
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			if (strstr($col, ' ')) {
+				$this->where_string .= "$col ";
+			}
+			else {
+				$this->where_string .= "$col = ";
+			}
+		}
+		else {
+			if (strstr($col, ' ')) {
+				$this->where_string .= "WHERE $col ";
+			}
+			else {
+				$this->where_string .= "WHERE $col = ";
+			}
+		}
 
-        $this->where_string = "";
+		if(!is_bool($value)
+			&& !is_int($value)
+			&& !is_float($value)
+			&& !is_double($value)
+			&& !is_numeric($value)
+			&& !is_null($value)
+		) {
+			$this->where_string .= "'$value'";
+		}
+		else if(is_null($value)) {
+			$this->where_string .= "''";
+		}
+		else {
+			$this->where_string .= "$value";
+		}
+	}
 
-        $result = $this->connection->query($insert);
+	/**
+	 * GROUP START
+	 * @return [type] [description]
+	 */
+	public function group_start ()
+	{
+		if ($this->where_string) {
+			$this->where_string .= ' AND (';
+		}
+		else {
+			$this->where_string .= 'WHERE (';
+		}
+	}
 
-        if($result)
-        {
-            if($save_last_id)
-                $this->last_id = $this->connection->insert_id;
-            
-            return true;
-        }
-        else
-            return false;
-    }
+	/**
+	 * GROUP START WHIT OR
+	 * @return [type] [description]
+	 */
+	public function group_start_or ()
+	{
+		if ($this->where_string) {
+			$this->where_string .= ' OR (';
+		}
+		else {
+			$this->where_string .= 'WHERE (';
+		}
+	}
 
-    // Select data in table
-    public function select($what = "*", $table)
-    {
-        if(!$table)
-            return false;
+	/**
+	 * GROUP END
+	 * @return [type] [description]
+	 */
+	public function group_end ()
+	{
+		$this->where_string .= ')';
+	}
 
-        //Open
-        $this->open();
+	// Save ORDER BY
+	public function order_by($col, $order = 'ASC')
+	{
+		$this->order_string = "ORDER BY $col $order";
+	}
 
-        $select_string = "SELECT $what FROM $table $this->where_string $this->order_string";
+	/**
+	 * SET LIMIT
+	 * @param  integer $count [description]
+	 * @return [type]         [description]
+	 */
+	public function limit ($count = 0) {
+		if ($count) {
+			$this->limit = "LIMIT $count";
+		}
+	}
 
-        $this->where_string = "";
-        $this->order_string = "";
+	/**
+	 * SET SKIP
+	 * @param  integer $count [description]
+	 * @return [type]         [description]
+	 */
+	public function skip ($count = 0) {
+		if ($count) {
+			$this->skip = "OFFSET $count";
+		}
+	}
 
-        return $this->connection->query($select_string);
-    }
+	/**
+	 * FROM
+	 * @param  [type] $table [description]
+	 * @return [type]        [description]
+	 */
+	public function from ($table) {
+		$this->from = $table;
+	}
 
-    // Update data in table
-    public function update($table, $array)
-    {
-        if(!$table || !$array)
-            return false;
+	/**
+	 * JOIN
+	 * @param  [type] $table [description]
+	 * @param  [type] $on    [description]
+	 * @return [type]        [description]
+	 */
+	public function join ($table, $on) {
+		// $this->join_table = $table;
+		// $this->join_on = $on;
+		$this->joins[$table] = $on;
+	}
 
-        //Open
-        $this->open();
+	// Insert data in table
+	public function insert ($table, $array, $save_last_id = true)
+	{
+		if(!$table || !$array)
+			return false;
 
-        $data = $this->product_query_data('update', $array);
+		//Open
+		$this->open();
 
-        $update = "UPDATE $table " . $data . " $this->where_string";
-        
-        $this->where_string = "";
+		$data = $this->product_query_data('insert', $array);
 
-        $result = $this->connection->query($update);
+		$insert = "INSERT INTO $table " . $data;
 
-        if($result)
-            return true;
-        else
-            return false;
-    }
+		$this->last_query = $insert;
 
-    // Drop / Delete data from table
-    public function delete($table)
-    {
-        if(!$table)
-            return false;
+		$result = $this->connection->query($insert);
 
-        //Open
-        $this->open();
+		$this->clean_query();
 
-        $delete = "DELETE FROM $table $this->where_string";
+		if($result)
+		{
+			if($save_last_id) {
+				$this->last_id = $this->connection->insert_id;
+			}
 
-        $result = $this->connection->query($delete);
+			return true;
+		}
+		else
+			return false;
+	}
 
-        if($result)
-            return true;
-        else
-            return false;
-    }
+	// Select data in table
+	public function select($what = "*", $table = null)
+	{
+		if(!$table && !$this->from) {
+			return false;
+		}
+		else if (!$table && $this->from) {
+			$table = $this->from;
+		}
 
-    // Custom Query
-    public function query($query)
-    {
-        $this->where_string = "";
+		//Open
+		$this->open();
 
-        return $this->connection->query($query);
-    }
+		if (!$this->joins) {
+			$select_string = "SELECT $what FROM $table $this->where_string $this->order_string $this->limit $this->skip";
+		}
+		else {
+			$select_string = "SELECT $what FROM $table";
 
-    // Return the Last Inserted ID
-    public function get_last_insert_id()
-    {
-        return $this->last_id;
-    }
+			foreach ($this->joins as $table => $on) {
+				$select_string .=  " JOIN $table ON $on";
+			}
 
-    // Close the connection
-    public function close ()
-    {
-        $this->connection->close();
-    }
+			$select_string .= " $this->where_string $this->order_string $this->limit $this->skip";
+		}
+
+		$this->last_query = $select_string;
+
+		$this->clean_query();
+
+		return $this->connection->query($select_string);
+	}
+
+	// Update data in table
+	public function update($table, $array)
+	{
+		if(!$table || !$array)
+			return false;
+
+		//Open
+		$this->open();
+
+		$data = $this->product_query_data('update', $array);
+
+		$update = "UPDATE $table " . $data . " $this->where_string";
+
+		$this->last_query = $update;
+
+		$result = $this->connection->query($update);
+
+		$this->clean_query();
+
+		if($result)
+			return true;
+		else
+			return false;
+	}
+
+	// Drop / Delete data from table
+	public function delete($table)
+	{
+		if(!$table)
+			return false;
+
+		//Open
+		$this->open();
+
+		$delete = "DELETE FROM $table $this->where_string";
+
+		$this->last_query = $delete;
+
+		$result = $this->connection->query($delete);
+
+		$this->clean_query();
+
+		if($result) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+
+	// Custom Query
+	public function query($query)
+	{
+		$this->clean_query();
+
+		return $this->connection->query($query);
+	}
+
+	// Return the Last Inserted ID
+	public function get_last_insert_id()
+	{
+		return $this->last_id;
+	}
+
+	/**
+	 * GET LAST QUERY
+	 * @return [type] [description]
+	 */
+	public function get_last_query () {
+		return $this->get_last_query_string();
+	}
+
+	/**
+	 * GET LAST QUERY STRING
+	 * @return [type] [description]
+	 */
+	public function get_last_query_string()
+	{
+		return $this->last_query;
+	}
+
+	/**
+	 * CLEAN QUERY
+	 * @return [type] [description]
+	 */
+	public function clean_query () {
+		$this->where_string = '';
+		$this->order_string = '';
+		$this->limit = '';
+		$this->skip = '';
+		// $this->join_table = '';
+		// $this->join_on = '';
+		$this->joins = array();
+		$this->from = '';
+	}
+
+	// Close the connection
+	public function close ()
+	{
+		$this->connection->close();
+	}
 
 }

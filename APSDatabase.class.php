@@ -31,23 +31,6 @@ class APSDatabase
 
 	function __construct($host = null, $user = null, $password = null, $database = null)
 	{
-		// PRODUCTION: 'localhost:3306', 'wwwfasta_hemodia', '@5t1?2Q6.?~0', 'wwwfasta_hemodialise'
-		// SANDBOX: 'localhost', 'root', 'root', 'conectarenal'
-
-		$isSandbox = (strstr($_SERVER['HTTP_HOST'], 'localhost')) ? true : false;
-
-		if (!$host)
-			$host = (!$isSandbox) ? 'localhost:3306' : 'localhost';
-
-		if (!$user)
-			$user = (!$isSandbox) ? 'wwwfasta_hemodia' : 'root';
-
-		if (!$password)
-			$password = (!$isSandbox) ? '@5t1?2Q6.?~0' : 'root';
-
-		if (!$database)
-			$database = (!$isSandbox) ? 'wwwfasta_hemodialise' : 'conectarenal';
-
 		// Verify
 		$this->host = $host;
 		$this->user = $user;

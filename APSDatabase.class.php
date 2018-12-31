@@ -13,6 +13,7 @@ class APSDatabase
 	public $user = '';
 	public $password = '';
 	public $database = '';
+	public $port = '';
 
 	public $connect_error;
 
@@ -29,16 +30,17 @@ class APSDatabase
 	private $from = "";
 	private $last_query = "";
 
-	function __construct($host = null, $user = null, $password = null, $database = null)
+	function __construct($host = null, $user = null, $password = null, $database = null, $port = 3306)
 	{
 		// Verify
 		$this->host = $host;
 		$this->user = $user;
 		$this->password = $password;
 		$this->database = $database;
+		$this->port = $port;
 
 		// Make Connection
-		$this->connection = new mysqli($this->host, $this->user, $this->password, $this->database);
+		$this->connection = new mysqli($this->host, $this->user, $this->password, $this->database, $this->port);
 
 		if ($this->connection->connect_error)
 			$this->connect_error = $this->connection->connect_error;

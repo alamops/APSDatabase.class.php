@@ -214,6 +214,66 @@ class APSDatabase
 	}
 
 	/**
+	 * WHERE IS NULL
+	 */
+	public function where_is_null($col) {
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			$this->where_string .= " AND $col IS NULL";
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			$this->where_string .= "$col IS NULL";
+		}
+		else {
+			$this->where_string .= "WHERE $col IS NULL";
+		}
+	}
+
+	/**
+	 * WHERE IS NULL
+	 */
+	public function where_is_null_or($col) {
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			$this->where_string .= " OR $col IS NULL";
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			$this->where_string .= "$col IS NULL";
+		}
+		else {
+			$this->where_string .= "WHERE $col IS NULL";
+		}
+	}
+
+	/**
+	 * WHERE IS NOT NULL
+	 */
+	public function where_is_not_null($col) {
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			$this->where_string .= " AND $col IS NOT NULL";
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			$this->where_string .= "$col IS NOT NULL";
+		}
+		else {
+			$this->where_string .= "WHERE $col IS NOT NULL";
+		}
+	}
+
+	/**
+	 * WHERE IS NOT NULL
+	 */
+	public function where_is_not_null_or($col) {
+		if($this->where_string && substr($this->where_string, -1) != '(') {
+			$this->where_string .= " OR $col IS NOT NULL";
+		}
+		else if ($this->where_string && substr($this->where_string, -1) == '(') {
+			$this->where_string .= "$col IS NOT NULL";
+		}
+		else {
+			$this->where_string .= "WHERE $col IS NOT NULL";
+		}
+	}
+
+	/**
 	 * GROUP START
 	 * @return [type] [description]
 	 */

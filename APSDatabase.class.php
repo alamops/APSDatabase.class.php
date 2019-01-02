@@ -273,14 +273,23 @@ class APSDatabase
 		}
 	}
 
+	public function group_start_and() {
+		$this->group_start(true);
+	}
+
 	/**
 	 * GROUP START
 	 * @return [type] [description]
 	 */
-	public function group_start ()
+	public function group_start ($and = true)
 	{
 		if ($this->where_string) {
-			$this->where_string .= ' AND (';
+			if ($and) {
+				$this->where_string .= ' AND (';
+			}
+			else {
+				$this->where_string .= ' (';
+			}
 		}
 		else {
 			$this->where_string .= 'WHERE (';
